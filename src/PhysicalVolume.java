@@ -4,6 +4,7 @@ public class PhysicalVolume extends Volume{
     PHardDrive s;
     public PhysicalVolume(String name,PHardDrive each) {
         super(name);
+        size+=each.getSize();
         s=each;
     }
 

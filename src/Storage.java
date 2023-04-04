@@ -1,14 +1,14 @@
 import java.awt.print.PrinterJob;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Scanner;
+import java.util.*;
 
 public class Storage {
     private final ArrayList<PHardDrive> drives = new ArrayList<PHardDrive>();
     private final ArrayList<volumeGroup> lvs = new ArrayList<volumeGroup>();
 
     private final ArrayList<PhysicalVolume> physicalVolumesDrive = new ArrayList<PhysicalVolume>();
+    private final ArrayList<Volume> logicalVolume = new ArrayList<Volume>();
+
+    private volumeGroup other;
     Scanner s = new Scanner(System.in);
 
     public Storage(String end) {
@@ -23,7 +23,6 @@ public class Storage {
                 drives.add(one);
             } else if (news.equals("list-Drives")) {
                 listDrives();
-
             } else if (news.contains("pvcreate")) {
                 String[] speak = news.split(" ");
                 PhysicalVolume one = new PhysicalVolume(speak[1], findHardDrive(speak[speak.length - 1]));
@@ -35,12 +34,24 @@ public class Storage {
                 volumeGroup lone = new volumeGroup(one[1], findPhysicalVolume(one[one.length - 1]));
                 lvs.add(lone);
             } else if (news.equals("vglist") || news.equals("vgList")) {
-                listPhysicalVolumeDrives();
+                listVolumeGroup();
             } else if (news.contains("vgextend")) {
                 String[] speak = news.split(" ");
-                volumeGroup some = findvolumeGroup(speak[1]);
+                other= new volumeGroup(findvolumeGroup(speak[1]).getName(),findPhysicalVolume(speak[speak.length-1]));
+                addSize(findPhysicalVolume(speak[speak.length-1]),findvolumeGroup(speak[1]));
+            } else if (news.contains("lvcreate")) {
+                String[] speak = news.split(" ");
+                String[] size = speak[speak.length - 2].split("G");
+                Volume longs=new Volume(speak[1],Integer.parseInt(size[0]),findvolumeGroup(speak[speak.length-1]));
+                removeSize(longs,findvolumeGroup(speak[speak.length-1]));
+                logicalVolume.add(longs);
+            } else if (news.equals("lvlist")) {
+                listLogicalVolumes();
+            }else if(news.equals("exit")){
+                end="exit";
             }
         }
+        System.out.println("Thanks for your Data :)");
     }
 
     public void listDrives() {
@@ -58,7 +69,7 @@ public class Storage {
             System.out.println("No physical volumes are installed.");
         } else {
             for (PhysicalVolume drive : physicalVolumesDrive) {
-                System.out.println(drive.getName() + ": [" + drive.getSize() + "G]" + " [" + drive.getUUID() + "]" + "[" + drive.getS() + "]");
+                System.out.println(drive.getName() + ": [" + drive.getSize() + "G]" + " [" + drive.getUUID() + "]" + "[" + drive.getS().getName() + "]");
             }
         }
     }
@@ -68,11 +79,22 @@ public class Storage {
             System.out.println("No  volume groups are installed.");
         } else {
             for (volumeGroup s : lvs) {
-                System.out.println(s.getName() + ": [" + s.getSize() + "G]" + " [" + s.getUUID() + "]");
+                if(other.getName().equals(s.getName())) {
+                    System.out.println(s.getName() + ": total: [" + s.getOne().getSize() + other.getSize() + "G]" + " available: [" + s.getSize() + "G] [" + s.getOne().getName() + " " + other.getOne().getName() + "]" + "[" + s.getUUID() + "]");
+                }else{
+                    System.out.println(s.getName() + ": total: [" + s.getOne().getSize() + "G]" + " available: [" + s.getSize() + "G] [" + s.getOne().getName() + "]" + "[" + s.getUUID() + "]");
+                }
             }
-        }
-    }
+        }}
+    public void listLogicalVolumes() {
+        if (logicalVolume.isEmpty()) {
+            System.out.println("No  logical volume groups are installed.");
+        } else {
+            for (Volume s : logicalVolume) {
+                System.out.println(s.getName() + ": [" + s.getSize() + "G]" + " [" + s.getVolumeGroups() + "]"+"["+s.getUUID()+"]");
 
+            }
+        }}
     public PHardDrive findHardDrive(String specific) {
         ArrayList<PHardDrive> one = new ArrayList<PHardDrive>();
         Collections.copy(drives, one);
@@ -101,17 +123,24 @@ public class Storage {
     }
 
     public volumeGroup findvolumeGroup(String specific) {
+        volumeGroup now = null;
+
         for (volumeGroup s : lvs) {
             if (s.getName().equals(specific)) {
-                return s;
+                now=s;
             }
         }
-        return null;
+        return now;
     }
 
     public void addSize(PhysicalVolume one, volumeGroup spec) {
-        spec.setSize(findPhysicalVolume(one.getName()).getSize() + spec.getSize());
-
+         spec.setSize(findPhysicalVolume(one.getName()).getSize() + spec.getSize());
+    }
+    public void removeSize(Volume one, volumeGroup spec) {
+        spec.setSize(spec.getSize()-one.getSize());
+        if(spec.getSize()<=0){
+            System.out.println("Not enough space in VG");
+        }
     }
 }
 
